@@ -10,7 +10,7 @@
 
 /* #include "hdf5.h" */
 
-#define POH5_VERSION 93
+#define POH5_VERSION 94
 
 #ifndef POH5_DO_SHUF
 #define POH5_DO_SHUF
@@ -97,6 +97,8 @@ extern int poh5_write_global_attr(
                       const int32_t  rlevel,        /**< [in] rlevel */
                       const int32_t  grid_topology, /**< [in] grid_topology */
                       const int      is_complete,   /**< [in] 1 if complete file */
+                      const int32_t  my_pe,         /*< [in] my pe. */
+                      const int32_t  num_of_pe,     /*< [in] num of pe. */
                       const int32_t  num_of_rgn,    /**< [in] num of region this file contains. */
                       const int32_t *rgnid,         /**< [in] array of region ids */
                       const char    *description,   /**< [in] description of this file */
@@ -121,6 +123,8 @@ extern int poh5_read_global_attr(
                       int32_t *rlevel,        /**< [out] rlevel */
                       int32_t *grid_topology, /**< [out] grid_topology */
                       int     *is_complete,   /**< [out] 1 if complete file */
+                      int32_t *my_pe,         /*< [in] my pe. */
+                      int32_t *num_of_pe,     /*< [in] num of pe. */
                       int32_t *num_of_rgn,    /**< [out] num of region this file contains. */
                       int32_t *rgnid[],       /**< [out] array of region id's */
                       char    description[64],   /**< [out] description of this file */
@@ -313,6 +317,72 @@ extern int poh5_read_variable_data(
                    int64_t *time_end,   /**< [out] end time of this step */
                    const int dtype,     /**< [in] POH5_{REAL4,REAL8,INTEGER4,INTEGER8} */
                    void *vdata)          /**< [out] data */
+  ;
+
+
+/*========================================================================*/
+/** \brief Create dataset for hgrid data.
+ *
+ * Create dataset for hgrid data in the given file_id.
+ *
+ * Hgrid consists of two data; `grd_x` and `grd_xt`, they are stored under the
+ * group `/Grd/Hgrid`.
+ *
+ * This routine opens, or creates unless exist, the group and creates dataset for
+ * both `grd_x` and `grd_xt`, then returns group_id for the group.
+ *
+ * You have to call poh5_write_hgrid_data() to write out data, with returning
+ * group_id.
+ * 
+ */
+extern int poh5_create_hgrid(
+                             const phid_t file_id, /**< [in] poh5 file id */
+                             const int num_of_rgn,
+                             const int gall1d,
+                             const int dtype)
+  ;
+
+
+/*========================================================================*/
+/** \brief Open group for hgrid data.
+ *
+ * Open group for hgrid data, '/Grd/Hgrid' and return it's group_id.
+ *
+ */
+extern phid_t poh5_open_hgrid(
+                              const int file_id) /**< [in] poh5 file id */
+  ;
+
+
+/*========================================================================*/
+/** \brief Write out hgrid data.
+ * 
+ * Write out hgrid data `grd_x` or `grd_xt`.
+ *
+ * You have to specify group_id for `/Grd/Hgrid` obtained by calling
+ * poh5_create_hgrid(). You also have to specify `"grd_x"` or `"grd_xt"` as
+ * `dname`.  
+ */
+extern int poh5_write_hgrid_data(
+                                 const int v_gid, /**[in] group_id for /Grd/Hgrid */
+                                 const int dtype,      /**< [in] POH5_{REAL|INTEGER}{4|8} */
+                                 const char* dname,  /**< [in] "grd_x" or "grd_xt" */
+                                 const void *var_data)   /**< hgrid data at current step */
+  ;
+
+/*========================================================================*/
+/** \brief Read in hgrid data.
+ *
+ * You have to specify group_id for `/Grd/Hgrid` obtained by calling
+ * poh5_open_hgrid(). You also have to specify `"grd_x"` or `"grd_xt"` as
+ * `dname`.
+ *
+ */
+int poh5_read_hgrid_data(
+                          const int v_gid, /**[in] group_id for /Grd/Hgrid */
+                          const int dtype,      /**< [in] POH5_{REAL|INTEGER}{4|8} */
+                          const char* dname,  /**< [in] "grd_x" or "grd_xt" */
+                          void *gdata)   /**< hgrid data at current step */
   ;
 
 
