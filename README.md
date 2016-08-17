@@ -9,7 +9,7 @@ Poh5 file format is re-implementation of PaNDa format on HDF5.
 PaNDa is an original format for NICAM datafile, which is called
 'ADVANCED' in NICAM source/namelist.
 
-Different from original PaNDa format, from version 94, you can include
+Different from original PaNDa format, you can include
 horizontal grid (hgrid) in each file.
 
 # APIs
