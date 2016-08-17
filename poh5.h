@@ -191,8 +191,7 @@ extern int poh5_read_variable_data(
 extern int poh5_create_hgrid(
                     const phid_t file_id, /**< [in] poh5 file id */
                     const int num_of_rgn,
-                    const int gall1d,
-                    const int dtype);
+                    const int gall1d);
 
 
 /*========================================================================*/
@@ -203,7 +202,6 @@ extern phid_t poh5_open_hgrid(
 /*========================================================================*/
 extern int poh5_write_hgrid_data(
                     const int v_gid, /**[in] group_id for /Grd/Hgrid */
-                    const int dtype,      /**< [in] POH5_{REAL|INTEGER}{4|8} */
                     const char* dname,  /**< [in] "grd_x" or "grd_xt" */
                     const void *var_data);   /**< hgrid data at current step */
 
@@ -211,7 +209,6 @@ extern int poh5_write_hgrid_data(
 /*========================================================================*/
 extern int poh5_read_hgrid_data(
                     const int v_gid, /**[in] group_id for /Grd/Hgrid */
-                    const int dtype,      /**< [in] POH5_{REAL|INTEGER}{4|8} */
                     const char* dname,  /**< [in] "grd_x" or "grd_xt" */
                     void *gdata);   /**< hgrid data at current step */
 

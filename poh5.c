@@ -978,17 +978,34 @@ int poh5_read_variable_data(
  * You have to call poh5_write_hgrid_data() to write out data, with returning
  * group_id.
  * 
+ * \return group_id for "/Grd/Hgrid".
+ *
  */
 hid_t poh5_create_hgrid(
                         const hid_t file_id,   /**<[in] poh5 file id */
                         const int num_of_rgn,  /**<[in] number of regions */
-                        const int gall1d,      /**<[in] gall1d */
-                        const int dtype)       /**<[in] datatype */
+                        const int gall1d)      /**<[in] gall1d */
+
 {
   hid_t g_gid;
   herr_t res;
 
+#ifdef DEBUG
+  fprintf(DBGOUT,"dbg:poh5_create_hgrid:file_id=%d\n",file_id);
+#endif
+
   /* open or create /Grd */
+  {
+    htri_t retval = H5Lexists( file_id, "/Grd", H5P_DEFAULT);
+    if ( retval>0 ) { /* exist */
+      g_gid = H5Gopen(file_id, "/Grd", H5P_DEFAULT);
+    } else { /* not exist or something wrong */
+      g_gid = H5Gcreate(file_id, "/Grd", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    }
+  }
+  check_h5(g_gid>0);
+
+  /* open or create /Grd/Hgrid */
   {
     htri_t retval = H5Lexists( file_id, "/Grd/Hgrid", H5P_DEFAULT);
     if ( retval>0 ) { /* exist */
@@ -997,6 +1014,11 @@ hid_t poh5_create_hgrid(
       g_gid = H5Gcreate(file_id, "/Grd/Hgrid", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     }
   }
+  check_h5(g_gid>0);
+
+#ifdef DEBUG
+  fprintf(DBGOUT,"dbg:poh5_create_hgrid:g_gid=%d\n",g_gid);
+#endif
 
 
   /* create dataset grd_x */
@@ -1013,14 +1035,14 @@ hid_t poh5_create_hgrid(
     max_dims[3] = gall1d;
 
     /* chunk size should be as large as possible for limited dimension on non-compression.*/
-    chunk_dims[0] = 1;
+    chunk_dims[0] = 3;
     chunk_dims[1] = num_of_rgn;
     chunk_dims[2] = gall1d;
     chunk_dims[3] = gall1d;
 
 #ifdef DEBUG
-    fprintf(DBGOUT,"dbg:poh5_create_hgrid:chunk_dims:\n");
-    for(int n=0;n<5;n++){  printf("%d,",(int)chunk_dims[n]); } ; printf("\n");
+    fprintf(DBGOUT,"dbg:poh5_create_hgrid:chunk_dims for grd_x:\n");
+    for(int n=0;n<4;n++){  printf("%d,",(int)chunk_dims[n]); } ; printf("\n");
 #endif
 
     /* Modify dataset creation properties */
@@ -1037,15 +1059,11 @@ hid_t poh5_create_hgrid(
 #endif
 
     /* datatype for variable data */
-    hid_t d_tid;
-    switch (dtype){
-    case POH5_REAL4:    d_tid = H5T_IEEE_F32BE; break;
-    case POH5_REAL8:    d_tid = H5T_IEEE_F64BE; break;
-    default: break;
-    };
-
-    hid_t d_did = H5Dcreate(g_gid, "grd_x", d_tid, H5Screate_simple(5,dims,max_dims),
+    hid_t d_did = H5Dcreate(g_gid, "grd_x",
+                            H5T_IEEE_F64BE,
+                            H5Screate_simple(4,dims,max_dims),
                             H5P_DEFAULT, c_pid, H5P_DEFAULT);
+    check_h5( d_did>0);
 
     res = H5Pclose(c_pid); 
     res = H5Dclose(d_did);
@@ -1074,7 +1092,7 @@ hid_t poh5_create_hgrid(
     chunk_dims[4] = gall1d;
 
 #ifdef DEBUG
-    fprintf(DBGOUT,"dbg:poh5_create_hgrid:chunk_dims:\n");
+    fprintf(DBGOUT,"dbg:poh5_create_hgrid:chunk_dims for grd_xt:\n");
     for(int n=0;n<5;n++){  printf("%d,",(int)chunk_dims[n]); } ; printf("\n");
 #endif
 
@@ -1092,14 +1110,9 @@ hid_t poh5_create_hgrid(
 #endif
 
     /* datatype for variable data */
-    hid_t d_tid;
-    switch (dtype){
-    case POH5_REAL4:    d_tid = H5T_IEEE_F32BE; break;
-    case POH5_REAL8:    d_tid = H5T_IEEE_F64BE; break;
-    default: break;
-    };
-
-    hid_t d_did = H5Dcreate(g_gid, "grd_xt", d_tid, H5Screate_simple(5,dims,max_dims),
+    hid_t d_did = H5Dcreate(g_gid, "grd_xt",
+                            H5T_IEEE_F64BE,
+                            H5Screate_simple(5,dims,max_dims),
                             H5P_DEFAULT, c_pid, H5P_DEFAULT);
 
     res = H5Pclose(c_pid); 
@@ -1133,6 +1146,10 @@ hid_t poh5_open_hgrid(
                       const int file_id) /**< [in] poh5 file id */
 
 {
+#ifdef DEBUG
+  fprintf(DBGOUT,"dbg:poh5_open_hgrid:file_id=%d\n",file_id);
+#endif
+
   hid_t g_gid;
   htri_t retval = H5Lexists( file_id, "/Grd/Hgrid", H5P_DEFAULT);
   if ( retval>0 ) { /* exist */
@@ -1141,6 +1158,11 @@ hid_t poh5_open_hgrid(
     fprintf(stderr,"Err:poh5_open_hgrid:Group for Hgrid not exist\n");
     g_gid = -1;
   }
+
+#ifdef DEBUG
+  fprintf(DBGOUT,"dbg:poh5_open_hgrid:g_gid=%d\n",g_gid);
+#endif
+
   return g_gid;
 }
 
@@ -1156,21 +1178,13 @@ hid_t poh5_open_hgrid(
  */
 int poh5_write_hgrid_data(
                           const int v_gid,      /**<[in] group_id for /Grd/Hgrid */
-                          const int dtype,      /**<[in] POH5_{REAL|INTEGER}{4|8} */
                           const char* dname,    /**<[in] "grd_x" or "grd_xt" */
                           const void *var_data) /**<[in] hgrid data at current step */
 {
-  hid_t d_tid; /* datatype ID for data */
-  {
-    switch (dtype){
-    case POH5_REAL4:    d_tid = H5T_NATIVE_FLOAT;  break;
-    case POH5_REAL8:    d_tid = H5T_NATIVE_DOUBLE; break;
-    default: break;}
-  }
   hid_t did = H5Dopen(v_gid,dname,H5P_DEFAULT);
   check_h5( did > 0 );
 
-  herr_t res = H5Dwrite(did, dtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, var_data);
+  herr_t res = H5Dwrite(did, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, var_data);
   H5Dclose(did);
 
   return 0;
@@ -1188,24 +1202,19 @@ int poh5_write_hgrid_data(
  *
  */
 int poh5_read_hgrid_data(
-                         const int v_gid,     /**[in] group_id for /Grd/Hgrid */
-                         const int dtype,     /**<[in] POH5_{REAL|INTEGER}{4|8} */
+                         const int g_gid,     /**[in] group_id for /Grd/Hgrid */
                          const char* dname,   /**<[in] "grd_x" or "grd_xt" */
                          void *gdata)         /**<[out] hgrid data at current step */
 {
 
 #ifdef DEBUG
-  fprintf(DBGOUT,"dbg:poh5_read_hgrid_data:dname=%s\n",dname);
+  fprintf(DBGOUT,"dbg:poh5_read_hgrid_data:g_gid=%d,dname=%s\n",g_gid,dname);
 #endif
 
-  hid_t d_tid;
-  switch (dtype){
-  case POH5_REAL4:    d_tid = H5T_NATIVE_FLOAT;  break;
-  case POH5_REAL8:    d_tid = H5T_NATIVE_DOUBLE; break;
-  default: break;  };
+  hid_t d_tid = H5T_NATIVE_DOUBLE;
 
   /* get current dataset */
-  hid_t did = H5Dopen(v_gid,dname,H5P_DEFAULT);
+  hid_t did = H5Dopen(g_gid,dname,H5P_DEFAULT);
   check_h5( did > 0 );
 
   /* TODO: check dimensions and datatype */
