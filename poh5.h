@@ -54,7 +54,7 @@ typedef float (real32_t);
 typedef double(real64_t);
 
 /* must be consistent with hid_t defined in H5Ipoublic.h */
-typedef int phid_t;
+typedef hid_t phid_t;
 
 
 /*========================================================================*/
@@ -188,7 +188,7 @@ extern int poh5_read_variable_data(
 
 
 /*========================================================================*/
-extern int poh5_create_hgrid(
+extern phid_t poh5_create_hgrid(
                     const phid_t file_id, /**< [in] poh5 file id */
                     const int num_of_rgn,
                     const int gall1d);
