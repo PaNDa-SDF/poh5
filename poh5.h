@@ -105,7 +105,7 @@ extern int poh5_read_global_attr(
 
 
 /*========================================================================*/
-extern phid_t poh5_create_variable(
+extern int poh5_create_variable(
                     const phid_t file_id, /**< [in] poh5 file id*/
                     const char *name,     /**< [in] variable name */
                     const char *dscr,     /**< [in] variable description */

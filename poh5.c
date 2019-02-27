@@ -474,7 +474,7 @@ hid_t poh5_open_variable_by_idx(
  * \return group_id for this variable.
  *
  */
-hid_t poh5_create_variable(
+herr_t poh5_create_variable(
                     const hid_t file_id,  /**< [in] poh5 file id */
                     const char *name,     /**< [in] variable name */
                     const char *dscr,     /**< [in] variable description */
@@ -506,7 +506,8 @@ hid_t poh5_create_variable(
       v_gid = H5Gopen(top_gid, name, H5P_DEFAULT);
       check_h5( v_gid > 0 );
       res = H5Gclose(top_gid);
-      return v_gid;
+      res = H5Gclose(v_gid);
+      return res;
     }else{ /* not created yet */
       v_gid = H5Gcreate(top_gid, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       check_h5( v_gid > 0 );
@@ -646,8 +647,8 @@ hid_t poh5_create_variable(
   /* update num_of_var */
   res = update_num_of_var( file_id );
 
-  return v_gid;
-
+  res = H5Gclose(v_gid);
+  return res;
 };
 
 
