@@ -132,12 +132,61 @@ hid_t poh5_open_file(
 int poh5_close_file(
                     const hid_t fid ) /**<[in] file_id to close */
 {
+  ssize_t    cnt;
+  hid_t     *objs;
+  hid_t      anobj;
+  H5I_type_t ot;
+  herr_t     res;
+
+  int        objids;
+  char      *objtype;
+  char       objname[1024];
 
 #ifdef DEBUG
   fprintf(DBGOUT,"dbg:poh5_close_file:fid=%d\n",fid);
 #endif
-     
-  int res = H5Fclose(fid);
+
+  cnt = H5Fget_obj_count(fid,H5F_OBJ_ALL);
+
+  if ( cnt > 1 ){
+    fprintf(stderr,"%d objects are not closed before closing file.\n", cnt);
+
+    objs   = malloc(cnt * sizeof(hid_t));
+    objids = H5Fget_obj_ids(fid,H5F_OBJ_ALL,cnt,objs);
+
+    for (int i = 0; i < objids; i++ ) {
+      anobj = *objs++;
+      ot    = H5Iget_type(anobj);
+      res   = H5Iget_name(anobj,objname,1024);
+      check_h5( res > 0 );
+
+      switch (ot){
+      case H5I_FILE:
+        objtype = "FILE "; break;
+      case H5I_GROUP:
+        objtype = "GROUP"; break;
+      case H5I_DATATYPE:
+        objtype = "DTTYP"; break;
+      case H5I_DATASPACE:
+        objtype = "DTSPC"; break;
+      case H5I_DATASET:
+        objtype = "DTSET"; break;
+      case H5I_ATTR:
+        objtype = "ATTR "; break;
+      default:
+        objtype = "UNDEF";
+      }
+
+      fprintf(stderr," %d: type %s, name %s\n",i,objtype,objname);
+    }
+    exit (1);
+  }
+
+  res = H5Fclose(fid);
+
+#ifdef DEBUG
+  fprintf(DBGOUT,"dbg:poh5_close_file:res=%d\n",res);
+#endif
 
   return 0;
 }
