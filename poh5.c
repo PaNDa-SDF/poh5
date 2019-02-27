@@ -97,6 +97,7 @@ hid_t poh5_open_file(
   /* mode is one of [POH5_FREAD, POH5_FWRITE, POH5_FAPPEND] */
 
   hid_t fid;
+  hid_t fapl;
 
 #ifdef DEBUG
   fprintf(DBGOUT,"dbg:poh5_open_file:mode=%d,fname=%s\n",mode,fname);
@@ -104,7 +105,11 @@ hid_t poh5_open_file(
 
   switch (mode){
   case POH5_FWRITE:   /* existing content will be vanished on open.*/
-    fid = H5Fcreate(fname,H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT);    break;
+    /* Close all opened objects when file closed */
+    fapl = H5Pcreate(H5P_FILE_ACCESS);
+    H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
+    fid = H5Fcreate(fname,H5F_ACC_TRUNC,H5P_DEFAULT,fapl);    break;
+    /* fid = H5Fcreate(fname,H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT); break; */
   case POH5_FREAD:    /* avoid overwrite action */
     fid = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);    break;
   case POH5_FAPPEND:  /* overwrite mode */
