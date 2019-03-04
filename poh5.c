@@ -97,6 +97,7 @@ hid_t poh5_open_file(
   /* mode is one of [POH5_FREAD, POH5_FWRITE, POH5_FAPPEND] */
 
   hid_t fid;
+  hid_t fapl;
 
 #ifdef DEBUG
   fprintf(DBGOUT,"dbg:poh5_open_file:mode=%d,fname=%s\n",mode,fname);
@@ -104,7 +105,11 @@ hid_t poh5_open_file(
 
   switch (mode){
   case POH5_FWRITE:   /* existing content will be vanished on open.*/
-    fid = H5Fcreate(fname,H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT);    break;
+    /* Close all opened objects when file closed */
+    fapl = H5Pcreate(H5P_FILE_ACCESS);
+    H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
+    fid = H5Fcreate(fname,H5F_ACC_TRUNC,H5P_DEFAULT,fapl);    break;
+    /* fid = H5Fcreate(fname,H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT); break; */
   case POH5_FREAD:    /* avoid overwrite action */
     fid = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);    break;
   case POH5_FAPPEND:  /* overwrite mode */
@@ -132,12 +137,61 @@ hid_t poh5_open_file(
 int poh5_close_file(
                     const hid_t fid ) /**<[in] file_id to close */
 {
+  ssize_t    cnt;
+  hid_t     *objs;
+  hid_t      anobj;
+  H5I_type_t ot;
+  herr_t     res;
+
+  int        objids;
+  char      *objtype;
+  char       objname[1024];
 
 #ifdef DEBUG
   fprintf(DBGOUT,"dbg:poh5_close_file:fid=%d\n",fid);
 #endif
-     
-  int res = H5Fclose(fid);
+
+  cnt = H5Fget_obj_count(fid,H5F_OBJ_ALL);
+
+  if ( cnt > 1 ){
+    fprintf(stderr,"%d objects are not closed before closing file.\n", cnt);
+
+    objs   = malloc(cnt * sizeof(hid_t));
+    objids = H5Fget_obj_ids(fid,H5F_OBJ_ALL,cnt,objs);
+
+    for (int i = 0; i < objids; i++ ) {
+      anobj = *objs++;
+      ot    = H5Iget_type(anobj);
+      res   = H5Iget_name(anobj,objname,1024);
+      check_h5( res > 0 );
+
+      switch (ot){
+      case H5I_FILE:
+        objtype = "FILE "; break;
+      case H5I_GROUP:
+        objtype = "GROUP"; break;
+      case H5I_DATATYPE:
+        objtype = "DTTYP"; break;
+      case H5I_DATASPACE:
+        objtype = "DTSPC"; break;
+      case H5I_DATASET:
+        objtype = "DTSET"; break;
+      case H5I_ATTR:
+        objtype = "ATTR "; break;
+      default:
+        objtype = "UNDEF";
+      }
+
+      fprintf(stderr," %d: type %s, name %s\n",i,objtype,objname);
+    }
+    exit (1);
+  }
+
+  res = H5Fclose(fid);
+
+#ifdef DEBUG
+  fprintf(DBGOUT,"dbg:poh5_close_file:res=%d\n",res);
+#endif
 
   return 0;
 }
@@ -425,7 +479,7 @@ hid_t poh5_open_variable_by_idx(
  * \return group_id for this variable.
  *
  */
-hid_t poh5_create_variable(
+herr_t poh5_create_variable(
                     const hid_t file_id,  /**< [in] poh5 file id */
                     const char *name,     /**< [in] variable name */
                     const char *dscr,     /**< [in] variable description */
@@ -457,7 +511,8 @@ hid_t poh5_create_variable(
       v_gid = H5Gopen(top_gid, name, H5P_DEFAULT);
       check_h5( v_gid > 0 );
       res = H5Gclose(top_gid);
-      return v_gid;
+      res = H5Gclose(v_gid);
+      return res;
     }else{ /* not created yet */
       v_gid = H5Gcreate(top_gid, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       check_h5( v_gid > 0 );
@@ -597,8 +652,8 @@ hid_t poh5_create_variable(
   /* update num_of_var */
   res = update_num_of_var( file_id );
 
-  return v_gid;
-
+  res = H5Gclose(v_gid);
+  return res;
 };
 
 
